@@ -1,11 +1,9 @@
 <script setup lang="ts">
-
+definePageMeta({
+  requiresAuth: true
+})
 </script>
 
 <template>
-<h1>Usuarios</h1>
+  <h1>Zona privada de usuarios</h1>
 </template>
-
-<style scoped>
-
-</style>
