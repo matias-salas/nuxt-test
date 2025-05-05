@@ -10,6 +10,46 @@ export const navMenu: NavMenu[] = [
         link: '/',
       },
       {
+        title: 'Firmas',
+        icon: 'i-lucide-file-signature',
+        link: '/firmas',
+      },
+      {
+        title: 'Documentos',
+        icon: 'i-lucide-file-text',
+        link: '/documentos',
+      },
+      {
+        title: 'Plantillas',
+        icon: 'i-lucide-building-2',
+        link: '/plantillas',
+      }
+    ],
+  },
+  {
+    heading: 'Herramientas',
+    items: [
+      {
+        title: 'Crear Firma',
+        icon: 'i-lucide-file-plus',
+        link: '/crear-firma',
+      },
+    ]
+  },
+  {
+    heading: 'Usuarios',
+    items: [
+      {
+        title: 'Usuarios',
+        icon: 'i-lucide-users',
+        link: '/usuarios',
+      },
+    ]
+  },
+  {
+    heading: 'Pages',
+    items: [
+      {
         title: 'Email',
         icon: 'i-lucide-mail',
         link: '/email',
@@ -20,16 +60,6 @@ export const navMenu: NavMenu[] = [
         link: '/tasks',
         new: true,
       },
-      {
-        title: 'Users',
-        icon: 'i-lucide-users',
-        link: '/users',
-      }
-    ],
-  },
-  {
-    heading: 'Pages',
-    items: [
       {
         title: 'Authentication',
         icon: 'i-lucide-lock-keyhole-open',
@@ -90,7 +120,7 @@ export const navMenu: NavMenu[] = [
       {
         title: 'Settings',
         icon: 'i-lucide-settings',
-        new: true,
+        // new: true,
         children: [
           {
             title: 'Profile',
@@ -332,7 +362,7 @@ export const navMenu: NavMenu[] = [
             title: 'Stepper',
             icon: 'i-lucide-circle',
             link: '/components/stepper',
-            new: true,
+            // new: true,
           },
           {
             title: 'Switch',
