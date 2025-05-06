@@ -21,12 +21,24 @@ export const useAuthStore = defineStore('auth', {
       this.token = token
       this.refreshToken = refreshToken
       this.expiresAt = expiresAt
+      
+      // Guardar token en cookie para SSR
+      const cookie = useCookie('auth-token', {
+        maxAge: 60 * 60 * 24 * 7, // 7 días
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      })
+      cookie.value = token
     },
     logout() {
       this.user = null
       this.token = null
       this.refreshToken = null
       this.expiresAt = null
+      
+      // Eliminar cookie al cerrar sesión
+      const cookie = useCookie('auth-token')
+      cookie.value = null
     },
     checkAuth() {
       if (!this.token) return false
@@ -51,7 +63,29 @@ export const useAuthStore = defineStore('auth', {
       }
       
       return true
+    },
+    // Nuevo método para restaurar la sesión desde la cookie
+    initFromCookie() {
+      const cookie = useCookie('auth-token')
+      
+      if (cookie.value && !this.token) {
+        try {
+          // Validar el token de la cookie
+          if (validateToken(cookie.value)) {
+            this.token = cookie.value
+            // Aquí podrías decodificar el token para obtener user_id, email, etc.
+            // o hacer una petición al backend para obtener los datos del usuario
+          } else {
+            this.logout()
+          }
+        } catch (error) {
+          console.error('Error al inicializar desde cookie:', error)
+          this.logout()
+        }
+      }
     }
   },
-  persist: true
+  persist: {
+    storage: process.client ? localStorage : undefined
+  }
 })
