@@ -1,29 +1,63 @@
 <script setup lang="ts">
-import { Loader2 } from 'lucide-vue-next'
-import PasswordInput from '~/components/PasswordInput.vue'
+import { useForm } from 'vee-validate'
+import { z } from 'zod'
+import { toTypedSchema } from '@vee-validate/zod'
+import { useAuthStore } from '~/stores/auth'
+import { useRoute, useRouter } from '#imports'
 
-const email = ref('demo@gmail.com')
-const password = ref('password')
+const schema = toTypedSchema(
+  z.object({
+    email: z.string().email({ message: 'Invalid email format' }),
+    password: z.string().min(6, { message: 'Password must contain at least 6 characters' })
+  })
+)
+
 const isLoading = ref(false)
+const { handleSubmit, errors, values, setFieldValue, resetForm } = useForm({ 
+  validationSchema: schema,
+  initialValues: {
+    email: '',
+    password: ''
+  },
+  validateOnMount: false,
+  validateOnBlur: true,
+  validateOnChange: true,
+  validateOnInput: false
+})
 
-function onSubmit(event: Event) {
-  event.preventDefault()
-  if (!email.value || !password.value)
-    return
+const auth = useAuthStore()
+const route = useRoute()
+const router = useRouter()
 
-  isLoading.value = true
-
-  setTimeout(() => {
-    if (email.value === 'demo@gmail.com' && password.value === 'password')
-      navigateTo('/')
-
+const onSubmit = handleSubmit(async (formValues) => {
+  try {
+    isLoading.value = true
+    await auth.login(formValues.email, formValues.password)
+    // Redirige a lo que pidió originalmente o al home
+    router.push(route.query.redirect as string || '/')
+  } catch (err) {
+    // Muestra toast o error visual
+    console.error(err)
+  } finally {
     isLoading.value = false
-  }, 3000)
-}
+  }
+})
+
+// Handle email input separately to avoid validation issues
+const emailInput = ref('')
+const passwordInput = ref('')
+
+watch(emailInput, (newValue) => {
+  setFieldValue('email', newValue)
+})
+
+watch(passwordInput, (newValue) => {
+  setFieldValue('password', newValue)
+})
 </script>
 
 <template>
-  <form class="grid gap-6" @submit="onSubmit">
+  <form class="grid gap-6" @submit.prevent="onSubmit">
     <div class="flex flex-col gap-4">
       <Button variant="outline" class="w-full gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="size-4">
@@ -51,7 +85,7 @@ function onSubmit(event: Event) {
       </Label>
       <Input
         id="email"
-        v-model="email"
+        v-model="emailInput"
         type="email"
         placeholder="name@example.com"
         :disabled="isLoading"
@@ -59,6 +93,7 @@ function onSubmit(event: Event) {
         auto-complete="email"
         auto-correct="off"
       />
+      <span v-if="errors.email" class="text-sm text-red-500">{{ errors.email }}</span>
     </div>
     <div class="grid gap-2">
       <div class="flex items-center">
@@ -72,10 +107,11 @@ function onSubmit(event: Event) {
           Forgot your password?
         </NuxtLink>
       </div>
-      <PasswordInput id="password" v-model="password" />
+      <PasswordInput id="password" v-model="passwordInput" />
+      <span v-if="errors.password" class="text-sm text-red-500">{{ errors.password }}</span>
     </div>
     <Button type="submit" class="w-full" :disabled="isLoading">
-      <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
+      <span v-if="isLoading" class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
       Login
     </Button>
   </form>

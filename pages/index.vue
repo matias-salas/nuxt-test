@@ -1,4 +1,8 @@
 <script setup lang="ts">
+definePageMeta({
+  requiresAuth: true
+})
+
 import NumberFlow from '@number-flow/vue'
 import { Activity, CreditCard, DollarSign, Users } from 'lucide-vue-next'
 

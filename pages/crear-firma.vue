@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, h } from 'vue'
+import { ref, h, computed, watch } from 'vue'
 import { toTypedSchema } from '@vee-validate/zod'
 import { useForm, FieldArray } from 'vee-validate'
 import { toast } from 'vue-sonner'
@@ -85,7 +85,6 @@ const formSchema = toTypedSchema(
     location_required: z.boolean(),
     send_to_blockchain: z.boolean(),
     show_evidences: z.boolean(),
-    signature_type: z.enum(['sequential', 'parallel']),
     redirect_url_success: z.string().url(),
     redirect_url_error: z.string().url(),
     redirect_url_reject: z.string().url(),
@@ -96,6 +95,22 @@ const formSchema = toTypedSchema(
     signers: z.array(signerSchema).min(1, 'Al menos un firmante'),
   })
 )
+
+/* -------------------------------------------------------------------------- */
+/*                               Datos de Ejemplo                             */
+/* -------------------------------------------------------------------------- */
+
+/** Lista de firmantes disponibles para seleccionar */
+const availableSigners = ref([
+  { id: 1, national_id: '12345678', first_name: 'Juan', last_name: 'Pérez' },
+  { id: 2, national_id: '87654321', first_name: 'María', last_name: 'González' },
+  { id: 3, national_id: '23456789', first_name: 'Carlos', last_name: 'López' },
+  { id: 4, national_id: '34567890', first_name: 'Laura', last_name: 'Martínez' },
+  { id: 5, national_id: '45678901', first_name: 'Roberto', last_name: 'Fernández' },
+  { id: 6, national_id: '56789012', first_name: 'Ana', last_name: 'Rodríguez' },
+  { id: 7, national_id: '67890123', first_name: 'Diego', last_name: 'Sánchez' },
+  { id: 8, national_id: '78901234', first_name: 'Sofía', last_name: 'Torres' },
+])
 
 /* -------------------------------------------------------------------------- */
 /*                                   Form                                     */
@@ -110,7 +125,6 @@ const { values, handleSubmit, setFieldValue } = useForm({
     location_required: true,
     send_to_blockchain: false,
     show_evidences: true,
-    signature_type: 'sequential',
     signers: [],
   },
 })
@@ -146,6 +160,75 @@ const onSubmit = handleSubmit((formValues) => {
     ),
   })
 })
+
+/** Estado para controlar la visibilidad del diálogo de selección de firmantes */
+const showSignerDialog = ref(false)
+
+/** Estado para la búsqueda de firmantes */
+const signerSearchQuery = ref('')
+const selectedSignerId = ref<number | null>(null)
+
+/** Firmantes filtrados por búsqueda */
+const filteredSigners = computed(() => {
+  const query = signerSearchQuery.value.toLowerCase().trim()
+  if (!query) return availableSigners.value
+  
+  return availableSigners.value.filter(signer => 
+    signer.national_id.toLowerCase().includes(query) || 
+    signer.first_name.toLowerCase().includes(query) || 
+    signer.last_name.toLowerCase().includes(query)
+  )
+})
+
+/** Abre el diálogo de selección de firmantes */
+function openSignerDialog() {
+  signerSearchQuery.value = ''
+  selectedSignerId.value = null
+  showSignerDialog.value = true
+}
+
+/** Cierra el diálogo de selección de firmantes */
+function closeSignerDialog() {
+  showSignerDialog.value = false
+}
+
+/** Agrega un firmante seleccionado al formulario */
+function addSelectedSigner(signerId: number, pushFn: Function) {
+  const signer = availableSigners.value.find(s => s.id === signerId)
+  if (!signer) return
+  
+  const signerData = {
+    national_id: signer.national_id,
+    first_name: signer.first_name,
+    last_name: signer.last_name,
+    signing_order: values.signers.length + 1,
+    is_required_to_sign: true,
+    signature_box_page: 1,
+    signature_box_x: 0,
+    signature_box_y: 0,
+    signature_box_width: 250,
+    signature_box_height: 150,
+    signature_box_all_pages: false,
+    send_email_notification: true,
+    send_sms_notification: false,
+    send_whatsapp_notification: false,
+    send_finish_email_notification: false,
+    send_finish_sms_notification: false,
+    send_finish_whatsapp_notification: false,
+    biometric: false,
+    allow_failed_biometric: false,
+    otp_type: 'email',
+    otp_email: true,
+    otp_whatsapp: false,
+    otp_sms: false,
+    validated_email: '',
+    validated_phone: '',
+  }
+  
+  // Usar la función push proporcionada por FieldArray para agregar el firmante
+  pushFn(signerData)
+  closeSignerDialog()
+}
 </script>
 
 <template>
@@ -263,26 +346,6 @@ const onSubmit = handleSubmit((formValues) => {
                 <FormLabel>Mostrar evidencias al finalizar</FormLabel>
               </FormItem>
             </FormField>
-
-            <FormField v-slot="{ componentField }" name="signature_type">
-              <FormItem>
-                <FormLabel>Tipo de firma</FormLabel>
-                <FormControl>
-                  <Select v-bind="componentField">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione tipo de firma" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectItem value="sequential">Firmantes consecutivos</SelectItem>
-                        <SelectItem value="parallel">Firmantes simultáneos</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            </FormField>
           </div>
 
           <!-- Columna derecha -->
@@ -351,13 +414,13 @@ const onSubmit = handleSubmit((formValues) => {
         <CardContent class="space-y-6">
           <FieldArray name="signers" v-slot="{ fields, remove, push }">
             <!-- Listado compacto de firmantes existentes -->
-            <div v-if="fields.length" class="grid gap-4">
+            <div v-if="fields.length" class="grid gap-4 mb-6">
               <Card v-for="(field, idx) in fields" :key="field.key" class="border-dashed">
                 <CardHeader class="flex flex-row items-center justify-between py-3">
                   <div class="text-sm font-medium">
                     {{ field.value.first_name || 'Firmante' }} {{ field.value.last_name }} — DNI {{ field.value.national_id || '—' }}
                   </div>
-                  <Button size="xs" variant="destructive" @click="remove(idx)">Eliminar</Button>
+                  <Button type="button" size="xs" variant="destructive" @click="remove(idx)">Eliminar</Button>
                 </CardHeader>
                 <CardContent class="grid md:grid-cols-3 gap-4">
                   <!-- Simplemente reusamos FormField con path signers[idx].campo -->
@@ -458,15 +521,117 @@ const onSubmit = handleSubmit((formValues) => {
                     </FormItem>
                   </FormField>
 
-                  <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.send_email_notification`" type="checkbox">
+                  <!-- Reemplazar checkboxes individuales por selects múltiples para notificaciones -->
+                  <div class="md:col-span-3 space-y-4 border rounded-md p-4">
+                    <h4 class="font-medium text-sm mb-2">Enviar aviso de documento para firma</h4>
+                    <div class="grid md:grid-cols-3 gap-2">
+                      <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.send_email_notification`" type="checkbox">
+                        <FormItem class="flex items-center gap-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox :checked="value" @update:checked="handleChange" />
+                          </FormControl>
+                          <FormLabel class="font-normal">Email</FormLabel>
+                        </FormItem>
+                      </FormField>
+
+                      <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.send_sms_notification`" type="checkbox">
+                        <FormItem class="flex items-center gap-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox :checked="value" @update:checked="handleChange" />
+                          </FormControl>
+                          <FormLabel class="font-normal">SMS</FormLabel>
+                        </FormItem>
+                      </FormField>
+
+                      <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.send_whatsapp_notification`" type="checkbox">
+                        <FormItem class="flex items-center gap-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox :checked="value" @update:checked="handleChange" />
+                          </FormControl>
+                          <FormLabel class="font-normal">WhatsApp</FormLabel>
+                        </FormItem>
+                      </FormField>
+                    </div>
+                  </div>
+
+                  <div class="md:col-span-3 space-y-4 border rounded-md p-4">
+                    <h4 class="font-medium text-sm mb-2">Enviar aviso de documento firmado</h4>
+                    <div class="grid md:grid-cols-3 gap-2">
+                      <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.send_finish_email_notification`" type="checkbox">
+                        <FormItem class="flex items-center gap-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox :checked="value" @update:checked="handleChange" />
+                          </FormControl>
+                          <FormLabel class="font-normal">Email</FormLabel>
+                        </FormItem>
+                      </FormField>
+
+                      <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.send_finish_sms_notification`" type="checkbox">
+                        <FormItem class="flex items-center gap-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox :checked="value" @update:checked="handleChange" />
+                          </FormControl>
+                          <FormLabel class="font-normal">SMS</FormLabel>
+                        </FormItem>
+                      </FormField>
+
+                      <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.send_finish_whatsapp_notification`" type="checkbox">
+                        <FormItem class="flex items-center gap-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox :checked="value" @update:checked="handleChange" />
+                          </FormControl>
+                          <FormLabel class="font-normal">WhatsApp</FormLabel>
+                        </FormItem>
+                      </FormField>
+                    </div>
+                  </div>
+
+                  <!-- Biometría -->
+                  <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.biometric`" type="checkbox">
                     <FormItem class="flex items-start gap-x-3 border rounded-md p-4 space-y-0 md:col-span-3">
                       <FormControl>
                         <Checkbox :checked="value" @update:checked="handleChange" />
                       </FormControl>
-                      <FormLabel>Enviar email de aviso de documento</FormLabel>
+                      <FormLabel>Requerir verificación biométrica</FormLabel>
                     </FormItem>
                   </FormField>
-                  <!-- (repetir checkboxes restantes de notificaciones, biometría, etc. para brevedad se omiten) -->
+
+                  <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.allow_failed_biometric`" type="checkbox">
+                    <FormItem class="flex items-start gap-x-3 border rounded-md p-4 space-y-0 md:col-span-3">
+                      <FormControl>
+                        <Checkbox :checked="value" @update:checked="handleChange" />
+                      </FormControl>
+                      <FormLabel>Permitir firma en caso de verificación biométrica fallida</FormLabel>
+                    </FormItem>
+                  </FormField>
+
+                  <!-- OTP adicionales -->
+                  <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.otp_email`" type="checkbox" v-if="values.signers[idx]?.otp_type === 'email'">
+                    <FormItem class="flex items-start gap-x-3 border rounded-md p-4 space-y-0 md:col-span-3">
+                      <FormControl>
+                        <Checkbox :checked="value" @update:checked="handleChange" />
+                      </FormControl>
+                      <FormLabel>Usar OTP por Email</FormLabel>
+                    </FormItem>
+                  </FormField>
+
+                  <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.otp_whatsapp`" type="checkbox" v-if="values.signers[idx]?.otp_type === 'whatsapp'">
+                    <FormItem class="flex items-start gap-x-3 border rounded-md p-4 space-y-0 md:col-span-3">
+                      <FormControl>
+                        <Checkbox :checked="value" @update:checked="handleChange" />
+                      </FormControl>
+                      <FormLabel>Usar OTP por WhatsApp</FormLabel>
+                    </FormItem>
+                  </FormField>
+
+                  <FormField v-slot="{ value, handleChange }" :name="`signers.${idx}.otp_sms`" type="checkbox" v-if="values.signers[idx]?.otp_type === 'sms'">
+                    <FormItem class="flex items-start gap-x-3 border rounded-md p-4 space-y-0 md:col-span-3">
+                      <FormControl>
+                        <Checkbox :checked="value" @update:checked="handleChange" />
+                      </FormControl>
+                      <FormLabel>Usar OTP por SMS</FormLabel>
+                    </FormItem>
+                  </FormField>
 
                   <!-- OTP -->
                   <FormField v-slot="{ componentField }" :name="`signers.${idx}.otp_type`">
@@ -513,41 +678,62 @@ const onSubmit = handleSubmit((formValues) => {
               </Card>
             </div>
 
-            <!-- Botón añadir firmante -->
-            <Button variant="outline" @click="push({
-              national_id: '',
-              first_name: '',
-              last_name: '',
-              signing_order: fields.length + 1,
-              is_required_to_sign: true,
-              signature_box_page: 1,
-              signature_box_x: 0,
-              signature_box_y: 0,
-              signature_box_width: 250,
-              signature_box_height: 150,
-              signature_box_all_pages: false,
-              send_email_notification: true,
-              send_sms_notification: false,
-              send_whatsapp_notification: false,
-              send_finish_email_notification: false,
-              send_finish_sms_notification: false,
-              send_finish_whatsapp_notification: false,
-              biometric: false,
-              allow_failed_biometric: false,
-              otp_type: 'email',
-              otp_email: true,
-              otp_whatsapp: false,
-              otp_sms: false,
-              validated_email: '',
-              validated_phone: '',
-            })">
+            <!-- Botón para abrir el diálogo de selección de firmantes -->
+            <Button type="button" variant="outline" @click="openSignerDialog">
               Agregar firmante
             </Button>
+
+            <!-- Diálogo de selección de firmantes -->
+            <Dialog :open="showSignerDialog" @update:open="showSignerDialog = $event">
+              <DialogContent class="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Seleccionar firmante</DialogTitle>
+                  <DialogDescription>
+                    Busca y selecciona un firmante para agregar al documento.
+                  </DialogDescription>
+                </DialogHeader>
+                <div class="py-4 space-y-4">
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Buscar firmante
+                    </label>
+                    <div class="relative">
+                      <Input
+                        type="text"
+                        placeholder="Buscar firmante por nombre o DNI"
+                        v-model="signerSearchQuery"
+                        class="mb-1"
+                        autofocus
+                      />
+                      <div v-if="filteredSigners.length > 0" class="max-h-60 overflow-y-auto space-y-1 mt-2">
+                        <div 
+                          v-for="signer in filteredSigners" 
+                          :key="signer.id" 
+                          class="p-2 border rounded-md hover:bg-slate-100 cursor-pointer"
+                          @click="addSelectedSigner(signer.id, push)"
+                        >
+                          <div class="font-medium">{{ signer.first_name }} {{ signer.last_name }}</div>
+                          <div class="text-sm text-gray-600">DNI: {{ signer.national_id }}</div>
+                        </div>
+                      </div>
+                      <div v-else-if="signerSearchQuery && filteredSigners.length === 0" class="p-2 text-gray-600">
+                        No se encontraron firmantes
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="secondary" @click="closeSignerDialog">Cancelar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </FieldArray>
           
-          <!-- Add FormMessage outside FieldArray but connected to the signers field -->
+          <!-- Fix: Wrap FormMessage inside FormItem -->
           <FormField v-slot="{ errorMessage }" name="signers">
-            <FormMessage>{{ errorMessage }}</FormMessage>
+            <FormItem>
+              <FormMessage>{{ errorMessage }}</FormMessage>
+            </FormItem>
           </FormField>
         </CardContent>
       </Card>

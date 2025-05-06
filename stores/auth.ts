@@ -1,17 +1,20 @@
+// ~/stores/auth.ts
 import { defineStore } from 'pinia'
+import { login as apiLogin } from '~/services/authService'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null as null | { id: string; name: string },
-    token: null as null | string,
+    token: null as null | string
   }),
   getters: {
-    isLoggedIn: (state) => !!state.token,
+    isLoggedIn: (state) => !!state.token
   },
   actions: {
-    setUser(userData: { id: string; name: string }, jwt: string) {
-      this.user = userData
-      this.token = jwt
+    async login(email: string, password: string) {
+      const { user, token } = await apiLogin({ email, password })
+      this.user = user
+      this.token = token
     },
     logout() {
       this.user = null
