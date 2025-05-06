@@ -43,4 +43,15 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2024-12-14',
+
+  runtimeConfig: {
+    // Private keys are only available on the server
+    // ...existing server-only variables
+    
+    // Public keys that are exposed to the client
+    public: {
+      apiBaseUrl: process.env.NUXT_API_BASE_URL || 'http://localhost:8000',
+      // ...other public variables
+    }
+  },
 })

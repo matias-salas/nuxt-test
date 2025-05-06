@@ -38,6 +38,12 @@ importers:
       embla-carousel-vue:
         specifier: ^8.5.2
         version: 8.5.2(vue@3.5.13(typescript@5.8.2))
+      jwt-decode:
+        specifier: ^4.0.0
+        version: 4.0.0
+      pinia-plugin-persistedstate:
+        specifier: ^4.2.0
+        version: 4.2.0(@pinia/nuxt@0.5.5(magicast@0.3.5)(typescript@5.8.2)(vue@3.5.13(typescript@5.8.2)))(magicast@0.3.5)(pinia@2.3.1(typescript@5.8.2)(vue@3.5.13(typescript@5.8.2)))
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^4.10.1
@@ -2505,6 +2511,9 @@ packages:
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
 
+  deep-pick-omit@1.2.1:
+    resolution: {integrity: sha512-2J6Kc/m3irCeqVG42T+SaUMesaK7oGWaedGnQQK/+O0gYc+2SP5bKh/KKTE7d7SJ+GCA9UUE1GRzh6oDe0EnGw==}
+
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
@@ -3435,6 +3444,10 @@ packages:
     resolution: {integrity: sha512-WYDyuc/uFcGp6YtM2H0uKmUwieOuzeE/5YocFJLnLfclZ4inf3mRn8ZVy1s7Hxji7Jxm6Ss8gqpexD/GlKoGgg==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
+  jwt-decode@4.0.0:
+    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
+    engines: {node: '>=18'}
+
   kdbush@3.0.0:
     resolution: {integrity: sha512-hRkd6/XW4HTsA9vjVpY9tuXJYLSlelnkTmVFu4M9/7MIYQtFcHpbugAU7UbOfjOiVSVYl2fqgBuJ32JUmRo5Ew==}
 
@@ -4051,6 +4064,17 @@ packages:
   picomatch@4.0.2:
     resolution: {integrity: sha512-M7BAV6Rlcy5u+m6oPhAPFgJTzAioX/6B0DxyvDlo9l8+T3nLKbrczg2WLUyzd45L8RqfUMyGPzekbMvX2Ldkwg==}
     engines: {node: '>=12'}
+
+  pinia-plugin-persistedstate@4.2.0:
+    resolution: {integrity: sha512-3buhA7ac+ssbOIx3VRCC8oHkoFwhDM9oHRCjo7nj+O8WUqnW+jRqh7eYT5eS/DNa3H28zp3dYf/nd/Vc8zj8eQ==}
+    peerDependencies:
+      '@pinia/nuxt': '>=0.9.0'
+      pinia: '>=2.3.0'
+    peerDependenciesMeta:
+      '@pinia/nuxt':
+        optional: true
+      pinia:
+        optional: true
 
   pinia@2.3.1:
     resolution: {integrity: sha512-khUlZSwt9xXCaTbbxFYBKDc/bWAGWJjOgvxETwkTN7KRm66EeT1ZdZj6i2ceh9sP2Pzqsbc704r2yngBrxBVug==}
@@ -8169,6 +8193,8 @@ snapshots:
 
   deep-is@0.1.4: {}
 
+  deep-pick-omit@1.2.1: {}
+
   deepmerge@4.3.1: {}
 
   default-browser-id@5.0.0: {}
@@ -9139,6 +9165,8 @@ snapshots:
       eslint-visitor-keys: 3.4.3
       espree: 9.6.1
       semver: 7.7.1
+
+  jwt-decode@4.0.0: {}
 
   kdbush@3.0.0: {}
 
@@ -10115,6 +10143,18 @@ snapshots:
   picomatch@2.3.1: {}
 
   picomatch@4.0.2: {}
+
+  pinia-plugin-persistedstate@4.2.0(@pinia/nuxt@0.5.5(magicast@0.3.5)(typescript@5.8.2)(vue@3.5.13(typescript@5.8.2)))(magicast@0.3.5)(pinia@2.3.1(typescript@5.8.2)(vue@3.5.13(typescript@5.8.2))):
+    dependencies:
+      '@nuxt/kit': 3.16.2(magicast@0.3.5)
+      deep-pick-omit: 1.2.1
+      defu: 6.1.4
+      destr: 2.0.3
+    optionalDependencies:
+      '@pinia/nuxt': 0.5.5(magicast@0.3.5)(typescript@5.8.2)(vue@3.5.13(typescript@5.8.2))
+      pinia: 2.3.1(typescript@5.8.2)(vue@3.5.13(typescript@5.8.2))
+    transitivePeerDependencies:
+      - magicast
 
   pinia@2.3.1(typescript@5.8.2)(vue@3.5.13(typescript@5.8.2)):
     dependencies:
